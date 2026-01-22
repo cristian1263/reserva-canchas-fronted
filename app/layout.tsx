@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import AuthLayout from '@/components/AuthLayout';
 
 export const metadata = {
   title: 'AgendaGol',
@@ -13,9 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body >
+      <body>
         <AuthProvider>
-          {children}
+          <AuthLayout>
+            {children}
+          </AuthLayout>
         </AuthProvider>
       </body>
     </html>
