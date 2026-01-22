@@ -56,24 +56,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const payload = decodeJwt(access_token);
 
+
   const user: User = {
     id: payload.user_id,
     email: payload.email,
     role: payload.is_admin ? 'ADMIN' : 'USER',
   };
 
+  
   setToken(access_token);
   setUser(user);
 
+  
   localStorage.setItem('token', access_token);
   localStorage.setItem('user', JSON.stringify(user));
+  document.cookie = `token=${access_token}; path=/ SameSite=Lax`;
 }
 
   function logout() {
-    setToken(null);
-    setUser(null);
+    document.cookie = 'token=; Max-Age=0; path=/';
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
   }
 
   return (
