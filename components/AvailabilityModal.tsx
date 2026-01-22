@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Field } from '@/types';
 import { getAvailability } from '@/services/cancha.service';
 import { createReservation } from '@/services/reserva.service';
@@ -18,22 +18,30 @@ function formatDate(date: Date) {
     return date.toISOString().split('T')[0];
 }
 
-function generateTimeSlots(startHour = 10, endHour = 22): string[] {
+function generateTimeSlots(
+    startHour = 10,
+    endHour = 22,
+    duration = 1,
+    currentHour?: number
+): string[] {
     const slots: string[] = [];
-
-    for (let hour = startHour; hour < endHour; hour++) {
+    const lastHour = endHour - duration; // última hora válida según duración
+    for (let hour = startHour; hour <= lastHour; hour++) {
+        if (currentHour !== undefined && hour <= currentHour) continue; // omite horas pasadas
         slots.push(`${hour.toString().padStart(2, '0')}:00`);
-
     }
-
     return slots;
 }
+
 
 /* =======================
    COMPONENT
 ======================= */
 export default function AvailabilityModal({ field, token, onClose }: Props) {
     const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1); // día siguiente
+
     const maxDate = new Date();
     maxDate.setDate(today.getDate() + 30);
 
@@ -45,48 +53,99 @@ export default function AvailabilityModal({ field, token, onClose }: Props) {
 
     async function loadAvailability(selectedDate: string) {
         setLoading(true);
-
         try {
-            const data = await getAvailability(field.id, selectedDate, token);
+            const data = await getAvailability(field.id, selectedDate, token); // slots libres desde backend
 
-            // Si backend no devuelve nada → slots base
+            let availableSlots: string[] = [];
+
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            const selectedDateObj = new Date(year, month - 1, day);
+
+            const today = new Date();
+            const isToday =
+                selectedDateObj.getFullYear() === today.getFullYear() &&
+                selectedDateObj.getMonth() === today.getMonth() &&
+                selectedDateObj.getDate() === today.getDate();
+
+            const currentHour = isToday ? today.getHours() : undefined;
+
             if (!Array.isArray(data) || data.length === 0) {
-                setSlots(generateTimeSlots());
+                // Si no hay datos, generamos slots base
+                availableSlots = generateTimeSlots(10, 22, duration, currentHour);
             } else {
-                setSlots(data);
+                // Filtramos horas pasadas si es hoy
+                availableSlots = data.filter((slot) => {
+                    if (currentHour !== undefined) {
+                        const slotHour = parseInt(slot.split(':')[0], 10);
+                        return slotHour > currentHour;
+                    }
+                    return true;
+                });
+
+                // Ajustar según duración
+                const lastHour = 22 - duration;
+                availableSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0], 10) <= lastHour);
             }
 
+            setSlots(availableSlots);
             setSelectedSlot('');
         } catch {
-            setSlots(generateTimeSlots());
+            setSlots(generateTimeSlots(10, 22, duration));
         } finally {
             setLoading(false);
         }
-
-
     }
 
-   async function handleReserve() {
-  if (!date || !selectedSlot) {
-    alert('Selecciona fecha y horario');
-    return;
-  }
 
-  try {
-    await createReservation(
-      field.id,
-      date,
-      selectedSlot,
-      duration,
-      token
-    );
+    async function handleReserve() {
+        if (!date || !selectedSlot) {
+            alert('Selecciona fecha y horario');
+            return;
+        }
 
-    alert('Reserva creada con éxito');
-    onClose();
-  } catch (error: any) {
-    alert('No se pudo crear la reserva: ' + error.message);
-  }
-}
+        // Validación fecha futura respecto a ahora
+        const now = new Date();
+
+        const [hour, minute] = selectedSlot.split(':').map(Number);
+        const [year, month, day] = date.split('-').map(Number);
+
+        const reservationDateTime = new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            0,
+            0
+        );
+        if (reservationDateTime <= now) {
+            alert('No puedes reservar para una hora pasada. Selecciona un horario futuro.');
+            return;
+        }
+
+        try {
+            await createReservation(
+                field.id,
+                date,
+                selectedSlot,
+                duration,
+                token
+            );
+
+            alert('Reserva creada con éxito');
+            await loadAvailability(date);
+
+        } catch (error: any) {
+            alert('Ya se encuentra reservada' );
+        }
+    }
+
+    useEffect(() => {
+        if (date) {
+            loadAvailability(date);
+        }
+    }, [duration]);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-full max-w-5xl rounded-xl bg-white p-6">
@@ -127,7 +186,7 @@ export default function AvailabilityModal({ field, token, onClose }: Props) {
                             <label className="mb-1 block text-sm">Fecha</label>
                             <input
                                 type="date"
-                                min={formatDate(today)}
+                                min={formatDate(tomorrow)} // ahora no se puede seleccionar el día actual
                                 max={formatDate(maxDate)}
                                 value={date}
                                 onChange={(e) => {
@@ -160,7 +219,7 @@ export default function AvailabilityModal({ field, token, onClose }: Props) {
                                 </div>
                             </div>
                         )}
-                            {/* DURACION */}
+                        {/* DURACION */}
                         <div className="mb-4">
                             <label className="block text-sm mb-2">Duración</label>
                             <div className="flex gap-2">
@@ -168,9 +227,10 @@ export default function AvailabilityModal({ field, token, onClose }: Props) {
                                     <button
                                         key={h}
                                         onClick={() => setDuration(h)}
+
                                         className={`rounded px-4 py-2 ${duration === h
-                                                ? 'bg-green-700 text-white'
-                                                : 'bg-gray-200'
+                                            ? 'bg-green-700 text-white'
+                                            : 'bg-gray-200'
                                             }`}
                                     >
                                         {h} hora{h > 1 ? 's' : ''}

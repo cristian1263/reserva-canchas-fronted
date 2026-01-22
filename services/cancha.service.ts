@@ -42,3 +42,4 @@ export async function getAvailability(
   const data = await response.json();
   return data.available_slots || [];
 }
+

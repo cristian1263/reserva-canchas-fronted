@@ -18,7 +18,7 @@ export async function createReservation(
       field_id: fieldId,
       start_time,
       duration_hours: duration,
-      notes: 'Reserva desde Next.js'
+      
     }),
   });
 
