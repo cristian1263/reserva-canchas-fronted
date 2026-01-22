@@ -63,14 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: payload.is_admin ? 'ADMIN' : 'USER',
   };
 
-  
+  document.cookie = `token=${access_token}; path=/; SameSite=Lax`;
+      
   setToken(access_token);
   setUser(user);
 
   
   localStorage.setItem('token', access_token);
   localStorage.setItem('user', JSON.stringify(user));
-  document.cookie = `token=${access_token}; path=/ SameSite=Lax`;
+
 }
 
   function logout() {

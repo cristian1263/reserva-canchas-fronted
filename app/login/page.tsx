@@ -16,9 +16,13 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    try {
+   try {
       await login(email, password);
-      router.push('/');
+
+      setTimeout(() => {
+        router.replace('/canchas');
+      }, 0);
+
     } catch (err) {
       setError('Credenciales incorrectas');
     }
@@ -31,8 +35,6 @@ export default function LoginPage() {
         className="w-full max-w-sm rounded-xl bg-white/30 p-6 shadow-xl backdrop-blur-md"
       >
         <h1 className="mb-4 text-center text-xl font-bold text-white">Iniciar sesión</h1>
-
-        
 
         <input
           type="email"
@@ -68,4 +70,5 @@ export default function LoginPage() {
       </form>
     </main>
   );
+
 }
