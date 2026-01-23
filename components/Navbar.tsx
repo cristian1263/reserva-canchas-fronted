@@ -41,7 +41,7 @@ export default function Navbar() {
                             Canchas
                         </a>
                         <a
-                            href="/reservas"
+                            href="/mis-reservas"
                             className="text-sm text-slate-300 hover:text-white transition"
                         >
                             Mis reservas
@@ -90,7 +90,7 @@ export default function Navbar() {
                         </li>
                         <li>
                             <a
-                                href="/reservas"
+                                href="/mis-reservas"
                                 className="block rounded px-2 py-1 hover:bg-white/10"
                                 onClick={() => setOpen(false)}
                             >

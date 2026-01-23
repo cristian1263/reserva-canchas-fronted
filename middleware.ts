@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  const publicRoutes = ['/login', '/register'];
+  const publicRoutes = ['/login'];
 
   // Ignorar archivos internos de Next
   if (

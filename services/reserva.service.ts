@@ -6,7 +6,7 @@ export async function createReservation(
   token: string
 ) {
 
-    const start_time = `${date}T${startTime}:00`;
+  const start_time = `${date}T${startTime}:00`;
 
   const response = await fetch('http://localhost:8003/reservations', {
     method: 'POST',
@@ -18,11 +18,11 @@ export async function createReservation(
       field_id: fieldId,
       start_time,
       duration_hours: duration,
-      
+
     }),
   });
 
-  console.log ('id', fieldId,'fecha y hora', start_time,'duracion', duration);
+  console.log('id', fieldId, 'fecha y hora', start_time, 'duracion', duration);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -31,3 +31,20 @@ export async function createReservation(
 
   return response.json();
 }
+
+export async function getMyReservations(token: string) {
+  const response = await fetch('http://localhost:8003/reservations/my', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Error al obtener reservas');
+  }
+
+  return response.json();
+}
+
